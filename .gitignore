@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Perso
+client/
+
 # Distribution / packaging
 .Python
 build/

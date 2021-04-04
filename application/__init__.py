@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 
 
 def create_app():
@@ -7,6 +8,8 @@ def create_app():
 
     # Config
     app.config.from_object('config.Config')
+
+    CORS(app, resources={r'/*': {'origins': '*'}})
 
     with app.app_context():
         # Include Routes
