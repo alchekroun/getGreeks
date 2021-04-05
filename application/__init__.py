@@ -9,7 +9,7 @@ def create_app():
     # Config
     app.config.from_object('config.Config')
 
-    CORS(app, resources={r'/*': {'origins': '*'}})
+    CORS(app, resources={r'/api/*': {'origins': '*'}})
 
     with app.app_context():
         # Include Routes
