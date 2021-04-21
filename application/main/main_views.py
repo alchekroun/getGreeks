@@ -1,5 +1,4 @@
 import os
-import json
 from flask import Blueprint, jsonify, make_response, current_app, send_file
 from math import log, sqrt, exp
 from scipy import stats
@@ -9,13 +8,6 @@ main_bp = Blueprint('main_bp', __name__,
                     static_folder='./dist/static/',
                     template_folder='./dist/',
                     )
-
-
-# For turning list into set before a serialisation
-def set_default(obj):
-    if isinstance(obj, set):
-        return list(obj)
-    raise TypeError
 
 
 @main_bp.route('/')
@@ -65,9 +57,7 @@ def calc_option(spot, strike, rate, drift, expiration, time):
 
     # PDF
     np_d_1 = stats.norm.pdf(d_1)
-    np_d_2 = stats.norm.pdf(d_2)
     np_d_n_1 = stats.norm.pdf(-d_1)
-    np_d_n_2 = stats.norm.pdf(-d_2)
 
     # Price
     price_call = spot * n_d_1 - strike * exp(-1 * rate * time_exp) * n_d_2
@@ -89,8 +79,9 @@ def calc_option(spot, strike, rate, drift, expiration, time):
     rho_call = strike * time_exp * exp(-rate * time_exp) * n_d_2
     rho_put = -strike * time_exp * exp(-rate * time_exp) * n_d_n_2
 
-    return jsonify({
-        "call": {
+    return jsonify([
+        {
+            "name": "Call",
             "price": round(price_call, 3),
             "delta": round(delta_call, 3),
             "theta": round(theta_call, 3),
@@ -98,36 +89,16 @@ def calc_option(spot, strike, rate, drift, expiration, time):
             "rho": round(rho_call, 3),
             "vega": round(vega_call, 3),
         },
-        "put": {
+        {
+            "name": "Put",
             "price": round(price_put, 3),
             "delta": round(delta_put, 3),
             "theta": round(theta_put, 3),
             "gamma": round(gamma_put, 3),
             "rho": round(rho_put, 3),
             "vega": round(vega_put, 3),
-        },
-        "dataTab": [
-            {
-                "name": "Call",
-                "price": round(price_call, 3),
-                "delta": round(delta_call, 3),
-                "theta": round(theta_call, 3),
-                "gamma": round(gamma_call, 3),
-                "rho": round(rho_call, 3),
-                "vega": round(vega_call, 3),
-            },
-            {
-                "name": "Put",
-                "price": round(price_put, 3),
-                "delta": round(delta_put, 3),
-                "theta": round(theta_put, 3),
-                "gamma": round(gamma_put, 3),
-                "rho": round(rho_put, 3),
-                "vega": round(vega_put, 3),
-            }
-        ]
-
-    })
+        }
+    ])
 
 
 @main_bp.route('/api/calc/delta/<spot_b>/<spot_e>/<strike>/<rate>/<drift>/<expiration>/')
@@ -290,9 +261,3 @@ def calc_rho(spot_b, spot_e, strike, rate, drift, expiration):
 def ping():
     """Testing route ping...pong"""
     return jsonify('pong!')
-
-
-@main_bp.route('/about/')
-def about():
-    """About page"""
-    print("about")
