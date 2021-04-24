@@ -1,5 +1,4 @@
-import os
-from flask import Blueprint, jsonify, make_response, current_app, send_file
+from flask import Blueprint, jsonify, make_response
 from math import log, sqrt, exp
 from scipy import stats
 
@@ -13,14 +12,12 @@ main_bp = Blueprint('main_bp', __name__,
 @main_bp.route('/')
 def index_client():
     """Landing page / Home page"""
-    dist_dir = current_app.config['DIST_DIR']
-    entry = os.path.join(dist_dir, 'index.html')
 
-    return send_file(entry)
+    return jsonify("Hello")
 
 
-@main_bp.route('/api/calc/option/<spot>/<strike>/<rate>/<drift>/<expiration>/<time>/')
-def calc_option(spot, strike, rate, drift, expiration, time):
+@main_bp.route('/api/calc/option/<type>/<spot>/<strike>/<rate>/<drift>/<expiration>/<time>/<dividend>/')
+def calc_option(type, spot, strike, rate, drift, expiration, time, dividend):
     """Routing for calculate all variable from an option """
 
     strike = float(strike)
@@ -28,6 +25,7 @@ def calc_option(spot, strike, rate, drift, expiration, time):
     rate = float(rate)
     drift = float(drift)
     expiration = float(expiration)
+    dividend = float(dividend)
 
     if not strike or not spot or not rate or not drift or not expiration or not time:
         message = jsonify(message='invalid arguments')
@@ -46,7 +44,11 @@ def calc_option(spot, strike, rate, drift, expiration, time):
     time_exp = expiration / time_u
 
     # D1 and D2
-    d_1 = (log(spot / strike) + (rate + pow(drift, 2) / 2) * time_exp) / (drift * sqrt(time_exp))
+    if type == "vanilla":
+        d_1 = (log(spot / strike) + (rate + pow(drift, 2) * 0.5) * time_exp) / (drift * sqrt(time_exp))
+    else:
+        d_1 = (log(spot / strike) + (rate - dividend + pow(drift, 2) * 0.5) * time_exp) / (drift * sqrt(time_exp))
+
     d_2 = d_1 - (drift * sqrt(time_exp))
 
     # CDF
@@ -59,25 +61,52 @@ def calc_option(spot, strike, rate, drift, expiration, time):
     np_d_1 = stats.norm.pdf(d_1)
     np_d_n_1 = stats.norm.pdf(-d_1)
 
-    # Price
-    price_call = spot * n_d_1 - strike * exp(-1 * rate * time_exp) * n_d_2
-    price_put = strike * exp(-1 * rate * time_exp) * n_d_n_2 - spot * n_d_n_1
+    if type == "vanilla":
+        # Price
+        price_call = spot * n_d_1 - strike * exp(-1 * rate * time_exp) * n_d_2
+        price_put = strike * exp(-1 * rate * time_exp) * n_d_n_2 - spot * n_d_n_1
 
-    # Greeks
-    delta_call = n_d_1
-    delta_put = -1 * delta_call
+        # Greeks
+        delta_call = n_d_1
+        delta_put = -delta_call
 
-    theta_call = -1 * ((spot * np_d_1 * drift) / (2 * sqrt(time_exp))) - rate * strike * exp(-rate * time_exp) * n_d_2
-    theta_put = -1 * ((spot * np_d_1 * drift) / (2 * sqrt(time_exp))) + rate * strike * exp(-rate * time_exp) * n_d_n_2
+        theta_call = -1 * ((spot * np_d_1 * drift) / (2 * sqrt(time_exp))) - rate * strike * exp(
+            -rate * time_exp) * n_d_2
+        theta_put = -1 * ((spot * np_d_1 * drift) / (2 * sqrt(time_exp))) + rate * strike * exp(
+            -rate * time_exp) * n_d_n_2
 
-    gamma_call = np_d_1 * (spot * drift * sqrt(time_exp))
-    gamma_put = np_d_n_1 * (spot * drift * sqrt(time_exp))
+        gamma_call = np_d_1 / (spot * drift * sqrt(time_exp))
+        gamma_put = np_d_n_1 / (spot * drift * sqrt(time_exp))
 
-    vega_call = spot * sqrt(time_exp) * np_d_1
-    vega_put = spot * sqrt(time_exp) * np_d_n_1
+        vega_call = spot * sqrt(time_exp) * np_d_1
+        vega_put = spot * sqrt(time_exp) * np_d_n_1
 
-    rho_call = strike * time_exp * exp(-rate * time_exp) * n_d_2
-    rho_put = -strike * time_exp * exp(-rate * time_exp) * n_d_n_2
+        rho_call = strike * time_exp * exp(-rate * time_exp) * n_d_2
+        rho_put = -strike * time_exp * exp(-rate * time_exp) * n_d_n_2
+    else:
+        # Price
+        price_call = spot * exp(-dividend * time_exp) * n_d_1 - strike * exp(-rate * time_exp) * n_d_2
+        price_put = strike * exp(-rate * time_exp) * n_d_n_2 - spot * exp(-dividend * time_exp) * n_d_n_1
+
+        # Greeks
+        delta_call = exp(-1 * dividend * time_exp) * n_d_1
+        delta_put = exp(-1 * dividend * time_exp) * (delta_call - 1)
+
+        theta_call = -1 * ((spot * np_d_1 * drift * exp(-1 * dividend * time_exp)) / (
+                    2 * sqrt(time_exp))) + dividend * spot * n_d_1 * exp(
+            -1 * dividend * time_exp) - rate * strike * exp(-rate * time_exp) * n_d_2
+        theta_put = -1 * ((spot * np_d_1 * drift * exp(-1 * dividend * time_exp)) /
+                          (2 * sqrt(time_exp))) - dividend * spot * n_d_1 * exp(
+            -1 * dividend * time_exp) + rate * strike * exp(-rate * time_exp) * n_d_n_2
+
+        gamma_call = (np_d_1 * exp(-1 * dividend * time_exp)) / (spot * drift * sqrt(time_exp))
+        gamma_put = (np_d_n_1 * exp(-1 * dividend * time_exp)) / (spot * drift * sqrt(time_exp))
+
+        vega_call = spot * sqrt(time_exp) * np_d_1 * exp(-1 * dividend * time_exp)
+        vega_put = spot * sqrt(time_exp) * np_d_n_1 * exp(-1 * dividend * time_exp)
+
+        rho_call = strike * time_exp * exp(-rate * time_exp) * n_d_2
+        rho_put = -strike * time_exp * exp(-rate * time_exp) * n_d_n_2
 
     return jsonify([
         {
@@ -121,7 +150,7 @@ def calc_delta(spot_b, spot_e, strike, rate, drift, expiration):
         result_tot["put"][count]['x'] = i
         result_tot["call"][count]['x'] = i
         result_tot["call"][count]['y'] = round(stats.norm.cdf(
-            (log(i / strike) + (rate * 0.5 * pow(drift, 2) * time_exp)) / (drift * sqrt(time_exp))), 3)
+            (log(i / strike) + (rate + pow(drift, 2) * 0.5) * time_exp) / (drift * sqrt(time_exp))), 3)
         result_tot["put"][count]['y'] = -1 * result_tot["call"][count]['y']
         count += 1
 
@@ -187,8 +216,8 @@ def calc_gamma(spot_b, spot_e, strike, rate, drift, expiration):
         result_tot["put"][count]['x'] = i
         result_tot["call"][count]['x'] = i
 
-        result_tot["call"][count]['y'] = round(np_d_1 * (i * drift * sqrt(time_exp)), 3)
-        result_tot["put"][count]['y'] = round(np_d_n_1 * (i * drift * sqrt(time_exp)), 3)
+        result_tot["call"][count]['y'] = round(np_d_1 / (i * drift * sqrt(time_exp)), 3)
+        result_tot["put"][count]['y'] = round(np_d_n_1 / (i * drift * sqrt(time_exp)), 3)
         count += 1
 
     return jsonify(result_tot)

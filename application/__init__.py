@@ -1,17 +1,20 @@
 from flask import Flask
-from flask_cors import CORS
 
-def create_app():
+
+def create_app(test_config=None):
     """Construct the core app object"""
     app = Flask(__name__, static_folder='../dist/static', instance_relative_config=False)
 
     # Config
-    app.config.from_object('config.Config')
+    if test_config is None:
+        app.config.from_object('config.Config')
+        from flask_cors import CORS
+        CORS(app, resources={r'/api/*': {'origins': '*'}})
+    else:
+        app.config.update(test_config)
 
     from config import Config
     app.logger.info('>>> {}'.format(Config.FLASK_ENV))
-
-    CORS(app, resources={r'/api/*': {'origins': '*'}})
 
     with app.app_context():
         # Include Routes
