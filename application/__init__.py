@@ -3,7 +3,7 @@ from flask import Flask
 
 def create_app(test_config=None):
     """Construct the core app object"""
-    app = Flask(__name__, static_folder='../dist/static', instance_relative_config=False)
+    app = Flask(__name__, instance_relative_config=False)
 
     # Config
     if test_config is None:
