@@ -1,1 +1,1 @@
-gunicorn -b :$PORT --access-logfile - --error-logfile - build:app
+web: gunicorn run:app
