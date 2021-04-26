@@ -9,7 +9,7 @@ def create_app(test_config=None):
     if test_config is None:
         app.config.from_object('config.Config')
         from flask_cors import CORS
-        CORS(app, resources={r'/api/*': {'origins': '*'}})
+        CORS(app, resources={r'/*': {'origins': '*'}}, support_credentials=True)
     else:
         app.config.update(test_config)
 
