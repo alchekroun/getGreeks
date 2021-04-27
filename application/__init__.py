@@ -16,9 +16,19 @@ def create_app(test_config=None):
     from config import Config
     app.logger.info('>>> {}'.format(Config.FLASK_ENV))
 
+    # Config flasgger
+    from flasgger import Swagger
+    app.config['SWAGGER'] = {
+        'title': 'GetGreeks API',
+        'uiversion': 3
+    }
+    Swagger(app)
+
     with app.app_context():
         # Include Routes
         from .main import main_views
+        from .calc import calc_views
         app.register_blueprint(main_views.main_bp)
+        app.register_blueprint(calc_views.calc_bp)
 
     return app
