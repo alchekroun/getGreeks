@@ -1,6 +1,4 @@
-from flask import Blueprint, jsonify, make_response
-from math import log, sqrt, exp
-from scipy import stats
+from flask import Blueprint, jsonify
 
 main_bp = Blueprint('main_bp', __name__,
                     url_prefix='',
