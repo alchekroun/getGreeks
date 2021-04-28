@@ -20,6 +20,9 @@ def create_app(test_config=None):
     from flasgger import Swagger
     app.config['SWAGGER'] = {
         'title': 'GetGreeks API',
+        'hide_top_bar': True,
+        'version': '0.2.0',
+        'doc_expansion': "list",
         'uiversion': 3
     }
     Swagger(app)

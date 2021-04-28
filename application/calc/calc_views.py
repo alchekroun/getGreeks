@@ -198,7 +198,7 @@ def calc_option(type_option):
     ])
 
 
-@calc_bp.route('/<type_option>/delta/', methods=['POST'])
+@calc_bp.route('/delta/<type_option>/', methods=['POST'])
 def calc_delta(type_option):
     """Route for calculate the variation of delta.
     ---
@@ -316,7 +316,7 @@ def calc_delta(type_option):
     return jsonify(result_tot)
 
 
-@calc_bp.route('/<type_option>/theta/', methods=['POST'])
+@calc_bp.route('/theta/<type_option>/', methods=['POST'])
 def calc_theta(type_option):
     """Route for calculate the variation of theta.
     ---
@@ -455,7 +455,7 @@ def calc_theta(type_option):
     return jsonify(result_tot)
 
 
-@calc_bp.route('/<type_option>/gamma/', methods=['POST'])
+@calc_bp.route('/gamma/<type_option>/', methods=['POST'])
 def calc_gamma(type_option):
     """Route for calculate the variation of gamma.
     ---
@@ -582,7 +582,7 @@ def calc_gamma(type_option):
     return jsonify(result_tot)
 
 
-@calc_bp.route('/<type_option>/vega/', methods=['POST'])
+@calc_bp.route('/vega/<type_option>/', methods=['POST'])
 def calc_vega(type_option):
     """Route for calculate the variation of vega.
     ---
@@ -706,7 +706,7 @@ def calc_vega(type_option):
     return jsonify(result_tot)
 
 
-@calc_bp.route('/<type_option>/rho/', methods=['POST'])
+@calc_bp.route('/rho/<type_option>/', methods=['POST'])
 def calc_rho(type_option):
     """Route for calculate the variation of vega.
     ---
